@@ -54,8 +54,8 @@ let isMusicPlaying = false;
 // ============================================
 
 function initMusic() {
-  // 초기 볼륨 설정
-  bgMusic.volume = 0.5;
+  // 초기 볼륨 설정 (최대)
+  bgMusic.volume = 1.0;
   
   // 시작 버튼 클릭 시 음악 재생 + 오버레이 숨김
   startBtn.addEventListener('click', () => {
