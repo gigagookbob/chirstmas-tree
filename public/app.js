@@ -113,30 +113,30 @@ function initMusic() {
       e.stopPropagation();
     }
     
+    // 오버레이 먼저 숨김 (즉각 반응)
+    startOverlay.classList.add('hidden');
+    
     // 1. AudioContext 초기화 및 resume
     initAudioContext();
     
-    // 2. iOS Chrome 오디오 잠금 해제
-    await unlockAudioForIOS();
-    
-    // 3. 실제 오디오 재생
-    bgMusic.volume = 1.0;
-    bgMusic.muted = false;
-    
-    bgMusic.play()
-      .then(() => {
-        isMusicPlaying = true;
-        musicToggle.classList.add('playing');
-        updateMusicIcon();
-        console.log('🎵 음악 재생 성공!');
-      })
-      .catch(err => {
-        console.error('재생 실패:', err);
-        updateMusicIcon();
-      });
-    
-    // 오버레이 숨김
-    startOverlay.classList.add('hidden');
+    // 2. iOS Chrome 오디오 잠금 해제 (백그라운드)
+    unlockAudioForIOS().then(() => {
+      // 3. 실제 오디오 재생
+      bgMusic.volume = 1.0;
+      bgMusic.muted = false;
+      
+      bgMusic.play()
+        .then(() => {
+          isMusicPlaying = true;
+          musicToggle.classList.add('playing');
+          updateMusicIcon();
+          console.log('🎵 음악 재생 성공!');
+        })
+        .catch(err => {
+          console.error('재생 실패:', err);
+          updateMusicIcon();
+        });
+    });
   };
   
   // 시작 버튼 이벤트 (touchstart가 iOS에서 더 확실함)
