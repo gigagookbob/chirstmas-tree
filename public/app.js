@@ -56,6 +56,7 @@ let isMusicPlaying = false;
 function initMusic() {
   // 전역 AudioContext (iOS 잠금 해제용)
   let audioContext = null;
+  let audioUnlocked = false;
   
   // AudioContext 생성 및 resume
   const initAudioContext = () => {
@@ -69,53 +70,70 @@ function initMusic() {
     return audioContext;
   };
   
-  // 시작 함수 (iOS 완전 대응)
+  // iOS Chrome 오디오 잠금 해제 (play → pause 기법)
+  const unlockAudioForIOS = () => {
+    if (audioUnlocked) return Promise.resolve();
+    
+    return new Promise((resolve) => {
+      // 볼륨을 0으로 하고 play → pause로 잠금 해제
+      const originalVolume = bgMusic.volume;
+      bgMusic.volume = 0;
+      bgMusic.muted = true;
+      
+      const playPromise = bgMusic.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          // 바로 pause
+          bgMusic.pause();
+          bgMusic.currentTime = 0;
+          bgMusic.volume = originalVolume;
+          bgMusic.muted = false;
+          audioUnlocked = true;
+          console.log('🔓 오디오 잠금 해제 성공');
+          resolve();
+        }).catch(() => {
+          bgMusic.volume = originalVolume;
+          bgMusic.muted = false;
+          console.log('⚠️ 오디오 잠금 해제 실패');
+          resolve();
+        });
+      } else {
+        bgMusic.volume = originalVolume;
+        bgMusic.muted = false;
+        resolve();
+      }
+    });
+  };
+  
+  // 시작 함수 (iOS Chrome 완전 대응)
   const startExperience = async (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     
-    // 1. AudioContext 초기화 및 resume (iOS 필수)
+    // 1. AudioContext 초기화 및 resume
     initAudioContext();
     
-    // 2. 오디오 설정
+    // 2. iOS Chrome 오디오 잠금 해제
+    await unlockAudioForIOS();
+    
+    // 3. 실제 오디오 재생
     bgMusic.volume = 1.0;
     bgMusic.muted = false;
     
-    // 3. 오디오 로드 및 재생
-    try {
-      // 먼저 로드 시도
-      bgMusic.load();
-      
-      // canplaythrough 이벤트 대기 또는 바로 재생
-      const playAudio = () => {
-        bgMusic.play()
-          .then(() => {
-            isMusicPlaying = true;
-            musicToggle.classList.add('playing');
-            updateMusicIcon();
-            console.log('🎵 음악 재생 성공!');
-          })
-          .catch(err => {
-            console.error('재생 실패:', err);
-            // 실패해도 상태 업데이트 (사용자가 다시 시도할 수 있도록)
-            updateMusicIcon();
-          });
-      };
-      
-      // 이미 로드됨
-      if (bgMusic.readyState >= 3) {
-        playAudio();
-      } else {
-        // 로드 대기
-        bgMusic.addEventListener('canplaythrough', playAudio, { once: true });
-        // 타임아웃 - 5초 후에도 로드 안되면 강제 시도
-        setTimeout(playAudio, 5000);
-      }
-    } catch (err) {
-      console.error('오디오 초기화 실패:', err);
-    }
+    bgMusic.play()
+      .then(() => {
+        isMusicPlaying = true;
+        musicToggle.classList.add('playing');
+        updateMusicIcon();
+        console.log('🎵 음악 재생 성공!');
+      })
+      .catch(err => {
+        console.error('재생 실패:', err);
+        updateMusicIcon();
+      });
     
     // 오버레이 숨김
     startOverlay.classList.add('hidden');
