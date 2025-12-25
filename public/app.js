@@ -57,22 +57,48 @@ function initMusic() {
   // 초기 볼륨 설정 (최대)
   bgMusic.volume = 1.0;
   
-  // 시작 버튼 클릭 시 음악 재생 + 오버레이 숨김
-  startBtn.addEventListener('click', () => {
-    playMusic();
-    startOverlay.classList.add('hidden');
-  });
+  // iOS 오디오 초기화를 위한 로드
+  bgMusic.load();
   
-  // 오버레이 아무데나 클릭해도 시작
+  // 시작 함수 (모바일 호환)
+  const startExperience = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // iOS에서 오디오 활성화를 위해 직접 play 호출
+    bgMusic.play().then(() => {
+      isMusicPlaying = true;
+      musicToggle.classList.add('playing');
+      updateMusicIcon();
+    }).catch(err => {
+      console.log('음악 재생 실패:', err);
+    });
+    
+    startOverlay.classList.add('hidden');
+  };
+  
+  // 시작 버튼 - 클릭과 터치 모두 지원
+  startBtn.addEventListener('click', startExperience);
+  startBtn.addEventListener('touchend', startExperience);
+  
+  // 오버레이 클릭/터치
   startOverlay.addEventListener('click', (e) => {
     if (e.target === startOverlay) {
-      playMusic();
-      startOverlay.classList.add('hidden');
+      startExperience(e);
+    }
+  });
+  startOverlay.addEventListener('touchend', (e) => {
+    if (e.target === startOverlay) {
+      startExperience(e);
     }
   });
   
   // 재생/일시정지 토글
   musicToggle.addEventListener('click', toggleMusic);
+  musicToggle.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    toggleMusic();
+  });
   
   // 볼륨 조절
   volumeSlider.addEventListener('input', (e) => {
