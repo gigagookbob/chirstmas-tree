@@ -481,7 +481,10 @@ function renderFallingMessage(message) {
   const el = document.createElement('div');
   el.className = 'falling-message';
   el.textContent = message.text;
-  el.style.left = message.x + '%';
+  
+  // 모바일 대응: X 위치를 5~75% 범위로 제한
+  const safeX = Math.max(5, Math.min(75, message.x));
+  el.style.left = safeX + '%';
   
   messagesContainer.appendChild(el);
   

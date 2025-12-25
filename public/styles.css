@@ -293,6 +293,9 @@ body {
   font-size: 0.9rem;
   font-weight: 700;
   white-space: nowrap;
+  max-width: 80vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: 
     0 4px 15px rgba(0, 0, 0, 0.2),
     0 0 20px rgba(255, 215, 0, 0.3);
