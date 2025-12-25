@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🎄 크리스마스 트리 꾸미기</title>
+  <meta name="description" content="함께 크리스마스 트리를 꾸며보세요! 실시간으로 장식을 추가하고 메시지를 남길 수 있습니다.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- 배경 음악 -->
+  <audio id="bgMusic" loop preload="auto">
+    <source src="classic-vintage-christmas-jazz.mp3" type="audio/mpeg">
+  </audio>
+  
+  <!-- 시작 오버레이 -->
+  <div class="start-overlay" id="startOverlay">
+    <div class="start-content">
+      <div class="start-icon">🎄</div>
+      <h2 class="start-title">Merry Christmas!</h2>
+      <p class="start-subtitle">함께 트리를 꾸며보세요</p>
+      <button class="start-btn" id="startBtn">🎵 시작하기</button>
+    </div>
+  </div>
+  
+  <!-- 음악 컨트롤 -->
+  <div class="music-control" id="musicControl">
+    <button class="music-btn" id="musicToggle" title="음악 재생/일시정지">
+      🔇
+    </button>
+    <div class="volume-control" id="volumeControl">
+      <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="50">
+    </div>
+  </div>
+  
+  <!-- 눈 내리는 배경 -->
+  <div class="snow-container" id="snowContainer"></div>
+  
+  <!-- 떨어지는 메시지 영역 -->
+  <div class="messages-container" id="messagesContainer"></div>
+  
+  <!-- 메인 컨텐츠 -->
+  <main class="main-content">
+    <h1 class="title">🎄 Merry Christmas 🎄</h1>
+    
+    <!-- 트리 영역 -->
+    <div class="tree-container" id="treeContainer">
+      <div class="tree" id="tree">
+        <!-- 트리 SVG -->
+        <svg class="tree-svg" viewBox="0 0 200 280" preserveAspectRatio="xMidYMid meet">
+          <!-- 트리 그림자 -->
+          <ellipse cx="100" cy="270" rx="60" ry="8" fill="rgba(0,0,0,0.3)"/>
+          
+          <!-- 트리 본체 -->
+          <polygon class="tree-layer tree-layer-1" points="100,10 140,70 60,70" />
+          <polygon class="tree-layer tree-layer-2" points="100,40 155,110 45,110" />
+          <polygon class="tree-layer tree-layer-3" points="100,70 170,160 30,160" />
+          <polygon class="tree-layer tree-layer-4" points="100,110 180,210 20,210" />
+          
+          <!-- 나무 줄기 -->
+          <rect class="tree-trunk" x="80" y="210" width="40" height="50" rx="3"/>
+          
+          <!-- 트리 꼭대기 별 -->
+          <text x="100" y="25" text-anchor="middle" font-size="24" class="tree-star">⭐</text>
+        </svg>
+        
+        <!-- 장식이 추가될 영역 -->
+        <div class="decorations-layer" id="decorationsLayer"></div>
+      </div>
+      
+      <!-- 드래그 힌트 -->
+      <p class="hint">트리를 클릭하거나 장식을 드래그해서 꾸며보세요!</p>
+    </div>
+  </main>
+  
+  <!-- 하단 UI -->
+  <footer class="bottom-ui">
+    <!-- 장식 선택 패널 -->
+    <div class="decoration-panel" id="decorationPanel">
+      <button class="decoration-btn selected" data-emoji="⭐" title="별">⭐</button>
+      <button class="decoration-btn" data-emoji="🎀" title="리본">🎀</button>
+      <button class="decoration-btn" data-emoji="🔔" title="종">🔔</button>
+      <button class="decoration-btn" data-emoji="❄️" title="눈송이">❄️</button>
+      <button class="decoration-btn" data-emoji="🎁" title="선물">🎁</button>
+      <button class="decoration-btn" data-emoji="🍭" title="사탕">🍭</button>
+      <button class="decoration-btn" data-emoji="🧦" title="양말">🧦</button>
+      <button class="decoration-btn" data-emoji="💫" title="반짝이">💫</button>
+      <button class="decoration-btn" data-emoji="🌟" title="빛나는 별">🌟</button>
+    </div>
+    
+    <!-- 메시지 입력 -->
+    <div class="message-input-container">
+      <input 
+        type="text" 
+        id="messageInput" 
+        class="message-input" 
+        placeholder="크리스마스 메시지를 입력하세요... ❄️"
+        maxlength="50"
+      >
+      <button id="sendBtn" class="send-btn">보내기</button>
+    </div>
+  </footer>
+  
+  <!-- 드래그 중인 장식 표시 -->
+  <div class="dragging-decoration" id="draggingDecoration"></div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
