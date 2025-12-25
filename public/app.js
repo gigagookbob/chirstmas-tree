@@ -82,24 +82,37 @@ function initMusic() {
     // iOS AudioContext 잠금 해제
     unlockAudio();
     
-    // 오디오 재생 시도
-    const playPromise = bgMusic.play();
-    
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
+    // 오디오 재생 시도 (여러 방법)
+    const tryPlay = () => {
+      // 방법 1: 기존 audio 엘리먼트 사용
+      bgMusic.play().then(() => {
         isMusicPlaying = true;
         musicToggle.classList.add('playing');
         updateMusicIcon();
-        console.log('🎵 음악 재생 시작');
+        console.log('🎵 음악 재생 시작 (방법 1)');
       }).catch(err => {
-        console.log('음악 재생 실패:', err);
-        // 재시도
-        setTimeout(() => {
-          bgMusic.play().catch(e => console.log('재시도 실패:', e));
-        }, 100);
+        console.log('방법 1 실패:', err);
+        
+        // 방법 2: 새 Audio 객체 생성
+        const newAudio = new Audio('https://files.catbox.moe/y8ix0p.mp3');
+        newAudio.loop = true;
+        newAudio.volume = 1.0;
+        newAudio.play().then(() => {
+          // 성공하면 기존 엘리먼트 교체
+          bgMusic.pause();
+          bgMusic.src = newAudio.src;
+          bgMusic.play();
+          isMusicPlaying = true;
+          musicToggle.classList.add('playing');
+          updateMusicIcon();
+          console.log('🎵 음악 재생 시작 (방법 2)');
+        }).catch(e => {
+          console.log('방법 2도 실패:', e);
+        });
       });
-    }
+    };
     
+    tryPlay();
     startOverlay.classList.add('hidden');
   };
   
