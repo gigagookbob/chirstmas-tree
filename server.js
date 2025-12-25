@@ -7,6 +7,27 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
+// 오디오 프록시 (CORS 우회)
+const AUDIO_URL = 'https://files.catbox.moe/y8ix0p.mp3';
+
+app.get('/audio/music.mp3', async (req, res) => {
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch(AUDIO_URL);
+    
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=86400'
+    });
+    
+    response.body.pipe(res);
+  } catch (err) {
+    console.error('오디오 프록시 에러:', err);
+    res.status(500).send('Audio proxy error');
+  }
+});
+
 // 정적 파일 서빙
 app.use(express.static(path.join(__dirname, 'public')));
 
