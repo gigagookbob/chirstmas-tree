@@ -60,19 +60,45 @@ function initMusic() {
   // iOS 오디오 초기화를 위한 로드
   bgMusic.load();
   
+  // iOS AudioContext 잠금 해제 함수
+  const unlockAudio = () => {
+    // AudioContext 생성 및 활성화
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioCtx.createBuffer(1, 1, 22050);
+      source.connect(audioCtx.destination);
+      source.start(0);
+      audioCtx.resume();
+    }
+  };
+  
   // 시작 함수 (모바일 호환)
   const startExperience = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // iOS에서 오디오 활성화를 위해 직접 play 호출
-    bgMusic.play().then(() => {
-      isMusicPlaying = true;
-      musicToggle.classList.add('playing');
-      updateMusicIcon();
-    }).catch(err => {
-      console.log('음악 재생 실패:', err);
-    });
+    // iOS AudioContext 잠금 해제
+    unlockAudio();
+    
+    // 오디오 재생 시도
+    const playPromise = bgMusic.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        isMusicPlaying = true;
+        musicToggle.classList.add('playing');
+        updateMusicIcon();
+        console.log('🎵 음악 재생 시작');
+      }).catch(err => {
+        console.log('음악 재생 실패:', err);
+        // 재시도
+        setTimeout(() => {
+          bgMusic.play().catch(e => console.log('재시도 실패:', e));
+        }, 100);
+      });
+    }
     
     startOverlay.classList.add('hidden');
   };
