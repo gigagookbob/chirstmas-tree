@@ -482,9 +482,7 @@ function renderFallingMessage(message) {
   el.className = 'falling-message';
   el.textContent = message.text;
   
-  // 모바일 대응: X 위치를 5~75% 범위로 제한
-  const safeX = Math.max(5, Math.min(75, message.x));
-  el.style.left = safeX + '%';
+  // CSS가 중앙 정렬 처리 (left: 50%, transform: translateX(-50%))
   
   messagesContainer.appendChild(el);
   
