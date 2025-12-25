@@ -54,90 +54,96 @@ let isMusicPlaying = false;
 // ============================================
 
 function initMusic() {
-  // 초기 볼륨 설정 (최대)
-  bgMusic.volume = 1.0;
+  // 전역 AudioContext (iOS 잠금 해제용)
+  let audioContext = null;
   
-  // iOS 오디오 초기화를 위한 로드
-  bgMusic.load();
-  
-  // iOS AudioContext 잠금 해제 함수
-  const unlockAudio = () => {
-    // AudioContext 생성 및 활성화
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) {
-      const audioCtx = new AudioContext();
-      const source = audioCtx.createBufferSource();
-      source.buffer = audioCtx.createBuffer(1, 1, 22050);
-      source.connect(audioCtx.destination);
-      source.start(0);
-      audioCtx.resume();
+  // AudioContext 생성 및 resume
+  const initAudioContext = () => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass && !audioContext) {
+      audioContext = new AudioContextClass();
     }
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    return audioContext;
   };
   
-  // 시작 함수 (모바일 호환)
-  const startExperience = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // 시작 함수 (iOS 완전 대응)
+  const startExperience = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    // iOS AudioContext 잠금 해제
-    unlockAudio();
+    // 1. AudioContext 초기화 및 resume (iOS 필수)
+    initAudioContext();
     
-    // 오디오 재생 시도 (여러 방법)
-    const tryPlay = () => {
-      // 방법 1: 기존 audio 엘리먼트 사용
-      bgMusic.play().then(() => {
-        isMusicPlaying = true;
-        musicToggle.classList.add('playing');
-        updateMusicIcon();
-        console.log('🎵 음악 재생 시작 (방법 1)');
-      }).catch(err => {
-        console.log('방법 1 실패:', err);
-        
-        // 방법 2: 새 Audio 객체 생성
-        const newAudio = new Audio('https://files.catbox.moe/y8ix0p.mp3');
-        newAudio.loop = true;
-        newAudio.volume = 1.0;
-        newAudio.play().then(() => {
-          // 성공하면 기존 엘리먼트 교체
-          bgMusic.pause();
-          bgMusic.src = newAudio.src;
-          bgMusic.play();
-          isMusicPlaying = true;
-          musicToggle.classList.add('playing');
-          updateMusicIcon();
-          console.log('🎵 음악 재생 시작 (방법 2)');
-        }).catch(e => {
-          console.log('방법 2도 실패:', e);
-        });
-      });
-    };
+    // 2. 오디오 설정
+    bgMusic.volume = 1.0;
+    bgMusic.muted = false;
     
-    tryPlay();
+    // 3. 오디오 로드 및 재생
+    try {
+      // 먼저 로드 시도
+      bgMusic.load();
+      
+      // canplaythrough 이벤트 대기 또는 바로 재생
+      const playAudio = () => {
+        bgMusic.play()
+          .then(() => {
+            isMusicPlaying = true;
+            musicToggle.classList.add('playing');
+            updateMusicIcon();
+            console.log('🎵 음악 재생 성공!');
+          })
+          .catch(err => {
+            console.error('재생 실패:', err);
+            // 실패해도 상태 업데이트 (사용자가 다시 시도할 수 있도록)
+            updateMusicIcon();
+          });
+      };
+      
+      // 이미 로드됨
+      if (bgMusic.readyState >= 3) {
+        playAudio();
+      } else {
+        // 로드 대기
+        bgMusic.addEventListener('canplaythrough', playAudio, { once: true });
+        // 타임아웃 - 5초 후에도 로드 안되면 강제 시도
+        setTimeout(playAudio, 5000);
+      }
+    } catch (err) {
+      console.error('오디오 초기화 실패:', err);
+    }
+    
+    // 오버레이 숨김
     startOverlay.classList.add('hidden');
   };
   
-  // 시작 버튼 - 클릭과 터치 모두 지원
+  // 시작 버튼 이벤트 (touchstart가 iOS에서 더 확실함)
+  startBtn.addEventListener('touchstart', startExperience, { passive: false });
   startBtn.addEventListener('click', startExperience);
-  startBtn.addEventListener('touchend', startExperience);
   
-  // 오버레이 클릭/터치
-  startOverlay.addEventListener('click', (e) => {
+  // 오버레이 터치/클릭
+  startOverlay.addEventListener('touchstart', (e) => {
     if (e.target === startOverlay) {
       startExperience(e);
     }
-  });
-  startOverlay.addEventListener('touchend', (e) => {
+  }, { passive: false });
+  startOverlay.addEventListener('click', (e) => {
     if (e.target === startOverlay) {
       startExperience(e);
     }
   });
   
   // 재생/일시정지 토글
-  musicToggle.addEventListener('click', toggleMusic);
-  musicToggle.addEventListener('touchend', (e) => {
-    e.preventDefault();
+  const handleToggle = (e) => {
+    if (e) e.preventDefault();
     toggleMusic();
-  });
+  };
+  musicToggle.addEventListener('touchstart', handleToggle, { passive: false });
+  musicToggle.addEventListener('click', handleToggle);
   
   // 볼륨 조절
   volumeSlider.addEventListener('input', (e) => {
@@ -145,7 +151,7 @@ function initMusic() {
     updateMusicIcon();
   });
   
-  // 오디오 재생 상태 변경 감지
+  // 오디오 상태 이벤트
   bgMusic.addEventListener('play', () => {
     isMusicPlaying = true;
     musicToggle.classList.add('playing');
@@ -156,6 +162,10 @@ function initMusic() {
     isMusicPlaying = false;
     musicToggle.classList.remove('playing');
     updateMusicIcon();
+  });
+  
+  bgMusic.addEventListener('error', (e) => {
+    console.error('오디오 에러:', e);
   });
 }
 
